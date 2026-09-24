@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart Trader Pro App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --primary-blue: #3b82f6;
+            --accent-green: #34d399;
+            --text-main: #f8fafc;
+            --text-sub: #cbd5e1;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background: #0f172a;
+        }
+
+        body { 
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%); 
+            color: var(--text-main); 
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        /* Perfect Mobile App Container */
+        .app-container { 
+            width: 100%; 
+            max-width: 100vw; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column; 
+            padding: 12px;
+            padding-bottom: 80px; /* Space for Bottom Nav */
+        }
+        
+        /* Balance Display Header */
+        .balance-card { 
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.85)); 
+            border: 1px solid rgba(255, 255, 255, 0.12); 
+            border-radius: 16px; 
+            padding: 14px; 
+            text-align: center; 
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(12px);
+            margin-bottom: 12px;
+        }
+        .balance-title { font-size: 11px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .usd-val { font-size: 28px; font-weight: 800; color: var(--accent-green); margin: 4px 0; text-shadow: 0 0 12px rgba(52, 211, 153, 0.3); }
+        .pts-val { font-size: 12px; color: #38bdf8; font-weight: 700; }
+        
+        /* Tab Content Screens */
+        .tab-content { display: none; width: 100%; }
+        .tab-content.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 14px; 
+            padding: 14px; 
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 12px;
+        }
+        .card-header { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Quiz Layout */
+        .question-text { font-size: 14px; color: #e2e8f0; margin-bottom: 12px; line-height: 1.3; font-weight: 500; }
+        .options-grid { display: flex; flex-direction: column; gap: 8px; }
+        .option-btn { 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+            color: #ffffff; border: none; padding: 12px 14px; border-radius: 10px; 
+            font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; 
+            transition: transform 0.1s;
+        }
+        .option-btn:active { transform: scale(0.98); }
+
+        /* Task & Referral Rows */
+        .task-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        .task-row:last-child { border-bottom: none; }
+        .task-info { display: flex; flex-direction: column; gap: 2px; }
+        .task-title { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+        .task-reward { font-size: 11px; color: var(--accent-green); font-weight: 700; }
+        
+        /* Buttons */
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; }
+
+        .link-box { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px dashed #3b82f6; font-size: 11px; color: #38bdf8; word-break: break-all; margin: 10px 0; text-align: center; }
+        #feedback { font-size: 12px; font-weight: 700; margin-top: 8px; text-align: center; height: 16px; }
+
+        /* Fixed Bottom Mobile Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 25%;
+            gap: 2px;
+        }
+        .nav-item .icon { font-size: 18px; }
+        .nav-item.active { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- BALANCE HEADER -->
+        <div class="balance-card">
+            <div class="balance-title">Main Earnings</div>
+            <div class="usd-val" id="usdDisplay">$0.000 USD</div>
+            <div class="pts-val" id="ptsDisplay">0 PTS</div>
+        </div>
+
+        <!-- 1. QUIZ SECTION -->
+        <div id="quizTab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <span>🧠 Trivia Challenge</span>
+                    <span style="font-size: 11px; color: #fbbf24;" id="qReward">+$0.002</span>
+                </div>
+                <div class="question-text" id="questionBox">Loading question...</div>
+                <div class="options-grid" id="optionsBox"></div>
+                <div id="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 2. TASKS SECTION -->
+        <div id="tasksTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">🎁 Daily Check-in</div>
+                <div class="task-row">
+                    <div class="task-info">
+                        <span class="task-title">Claim Daily Bonus</span>
+                        <span class="task-reward">+$0.005 USD</span>
+                    </div>
+                    <button class="btn btn-success" style="width: 75px; padding: 6px 10px; font-size: 12px;" id="claimBtn" onclick="claimDaily()">Claim</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">🚀 Reward Boosters</div>
+                <div class="task-row">
+                    <div class="task-info">
+                        <span class="task-title">Join Telegram Channel</span>
+                        <span class="task-reward">+$0.050 USD</span>
+                    </div>
+                    <button class="btn btn-success" style="width: 75px; padding: 6px 10px; font-size: 12px;" id="channelBtn" onclick="joinChannel()">Join</button>
+                </div>
+
+                <div class="task-row">
+                    <div class="task-info">
+                        <span class="task-title">Watch Video Ad</span>
+                        <span class="task-reward">+$0.010 USD</span>
+                    </div>
+                    <button class="btn btn-warning" style="width: 75px; padding: 6px 10px; font-size: 12px;" onclick="watchAd()">Watch</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. REFERRAL SECTION -->
+        <div id="referralTab" class="tab-content">
+            <div class="card" style="text-align: center;">
+                <div style="font-size: 32px; margin-bottom: 4px;">🤝</div>
+                <div class="card-header" style="justify-content: center;">Invite Friends & Earn</div>
+                <p style="font-size: 12px; color: var(--text-sub);">Earn <strong style="color: var(--accent-green);">+$0.020 USD</strong> per invite!</p>
+                
+                <div class="link-box" id="refLink">https://t.me/SMARtTrader0r_bot?start=ref12345</div>
+                <button class="btn btn-primary" onclick="copyLink()">Copy Invite Link</button>
+            </div>
+        </div>
+
+        <!-- 4. CASHOUT SECTION -->
+        <div id="cashoutTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">💳 Withdraw Funds</div>
+                <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 10px;">Min Threshold: <strong style="color: #fbbf24;">$100.00 USD</strong></p>
+                <button class="btn btn-primary" onclick="withdraw()">Request Withdrawal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM MOBILE NAVIGATION BAR -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('quizTab', this)">
+            <span class="icon">🧠</span>
+            <span>Quiz</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('tasksTab', this)">
+            <span class="icon">🚀</span>
+            <span>Tasks</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('referralTab', this)">
+            <span class="icon">👥</span>
+            <span>Refer</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('cashoutTab', this)">
+            <span class="icon">💳</span>
+            <span>Wallet</span>
+        </button>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+
+        // State Management
+        let usdBalance = localStorage.getItem('app_usd') ? parseFloat(localStorage.getItem('app_usd')) : 0.000;
+        let adCount = localStorage.getItem('ads_watched') ? parseInt(localStorage.getItem('ads_watched')) : 0;
+        let answerCount = 0;
+
+        function updateUI() {
+            document.getElementById('usdDisplay').innerText = "$" + usdBalance.toFixed(3) + " USD";
+            let pts = Math.floor(usdBalance * 1000);
+            document.getElementById('ptsDisplay').innerText = pts + " PTS";
+            localStorage.setItem('app_usd', usdBalance);
+        }
+        updateUI();
+
+        // Switch Tabs Logic (Menu Switcher Fix)
+        function switchTab(tabId, element) {
+            let tabs = document.querySelectorAll('.tab-content');
+            let navBtns = document.querySelectorAll('.nav-item');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            navBtns.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        // Questions Logic
+        const questions = [
+            { q: "What is the capital city of France?", options: ["Berlin", "Madrid", "Paris", "Rome"], correct: 2 },
+            { q: "Which cryptocurrency is considered Digital Gold?", options: ["Ethereum", "Bitcoin", "Solana", "Dogecoin"], correct: 1 },
+            { q: "What does Forex stand for?", options: ["Foreign Exchange", "Forward Exercise", "Formal Exchange", "Forest Export"], correct: 0 },
+            { q: "How many hours are there in a day?", options: ["12", "24", "48", "36"], correct: 1 }
+        ];
+        let currentQ = 0;
+
+        function loadQuestion() {
+            let qData = questions[currentQ];
+            document.getElementById('questionBox').innerText = (currentQ + 1) + ". " + qData.q;
+            let optionsHTML = "";
+            qData.options.forEach((opt, idx) => {
+                optionsHTML += `<button class="option-btn" onclick="checkAnswer(${idx})">${opt}</button>`;
+            });
+            document.getElementById('optionsBox').innerHTML = optionsHTML;
+            document.getElementById('feedback').innerText = "";
+        }
+
+        function checkAnswer(selected) {
+            let feedback = document.getElementById('feedback');
+            answerCount++;
+
+            if (selected === questions[currentQ].correct) {
+                usdBalance += 0.002;
+                updateUI();
+                feedback.style.color = "#34d399";
+                feedback.innerText = "Correct! +$0.002 Added.";
+            } else {
+                feedback.style.color = "#f87171";
+                feedback.innerText = "Wrong answer!";
+            }
+
+            setTimeout(() => {
+                currentQ = (currentQ + 1) % questions.length;
+                loadQuestion();
+            }, 1200);
+        }
+        loadQuestion();
+
+        // Actions
+        function claimDaily() {
+            let lastClaim = localStorage.getItem('last_claim');
+            let today = new Date().toDateString();
+            if (lastClaim === today) {
+                alert("Already claimed today!");
+            } else {
+                usdBalance += 0.005;
+                localStorage.setItem('last_claim', today);
+                updateUI();
+                alert("+$0.005 USD Claimed!");
+            }
+        }
+
+        function joinChannel() {
+            window.open("https://t.me/SMARtTrader0r", "_blank");
+            setTimeout(() => {
+                usdBalance += 0.050;
+                updateUI();
+                alert("+$0.050 USD Added!");
+            }, 3000);
+        }
+
+        function watchAd() {
+            window.open("YOUR_MONETAG_DIRECT_LINK_HERE", "_blank");
+            usdBalance += 0.010;
+            adCount++;
+            localStorage.setItem('ads_watched', adCount);
+            updateUI();
+        }
+
+        function copyLink() {
+            let linkText = document.getElementById('refLink').innerText;
+            navigator.clipboard.writeText(linkText);
+            alert("Invite link copied!");
+        }
+
+        function withdraw() {
+            if (usdBalance < 100) {
+                alert("Minimum withdrawal limit is $100.00 USD.");
+            } else {
+                alert("Verification Pending!");
+            }
+        }
+    </script>
+</body>
+</html>
